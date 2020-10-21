@@ -1,0 +1,116 @@
+
+# installing knitr, rmarkdown packages
+
+install.packages("knitr")
+
+install.packages("rmarkdown")
+
+library(knitr)
+
+library(rmarkdown)
+
+
+###1
+##1)
+#a
+n=100
+x <- numeric(n)
+for(i in 1:n){
+  x[i] <- i/n  
+}
+
+#b
+e <- rnorm(n,mean=0,sd=1)
+
+#c
+y <- numeric(n)
+b0 <- 1
+b1 <- 3
+for (i in 1:n){
+y[i] <- b0 + b1*x[i] + e[i]
+}
+
+#d
+Sxy <- 0; Sxx <- 0
+for(i in 1:n){
+Sxy <- Sxy + (x[i]-mean(x))*(y[i]-mean(y))
+Sxx <- Sxx + (x[i]-mean(x))^2
+}
+
+
+hat_b1 <- Sxy/Sxx
+hat_b0 <- mean(y)-hat_b1*mean(x)
+
+#e
+m <- 500
+e <- matrix(nrow=n,ncol=m)
+y <- matrix(nrow=n,ncol=m)
+Sxy <- numeric(m)
+Sxx <- numeric(m)
+hat_b1 <- numeric(m)
+hat_b0 <- numeric(m)
+
+for (i in 1:m){
+e[,i] <- rnorm(n,mean=0,sd=1)
+  for (j in 1:n){
+  y[j,i] <- b0 + b1*x[j] + e[j,i]
+  }
+  for (k in 1:n){
+  Sxy[i] <- Sxy[i] + (x[k]-mean(x))*(y[k,i]-mean(y[,i]))
+  Sxx[i] <- Sxx[i] + (x[k]-mean(x))^2
+  }
+hat_b1[i] <- Sxy[i]/Sxx[i]
+hat_b0[i] <- mean(y[,i])-hat_b1[i]*mean(x)
+}
+
+##2)
+mean_hat_b1 <- mean(hat_b1)
+mean_hat_b0 <- mean(hat_b0)
+print(mean_hat_b1); print(mean_hat_b0)
+
+
+##2
+rm(list=ls())
+
+#1)
+#난수 추출
+n=300
+k=20
+x <- runif(n,-pi,pi)
+e <- rnorm(n,mean=0,sd=0.2)
+m <- numeric(n); y <- numeric(n)
+m <- sin(x) ; y <- m+e
+
+m_hat=matrix(0,nrow=300,ncol=20)
+
+#RSS와 TE를 최소화하는 k_star 구하기
+error <- data.frame(k=1:20,RSS=0,TE=0)
+
+for (j in 1:k){
+    for (i in 1:n){
+    dist <- data.frame(1:300,abs(x[i]-x))   #거리 계산
+    dist_ordered <- dist[order(dist[2]),]   #거리 오름차순.
+    m_hat[i,j] <- sum(y[dist_ordered[,1][1:j]])/j
+    error[j,2] <- error[j,2] + (y[i] - m_hat[i,j])^2
+    error[j,3] <- error[j,3] + (m[i] - m_hat[i,j])^2
+    }
+}
+head(error)
+
+k_star <- matrix(nrow=1,ncol=2)
+rownames(k_star) <- "k" ; colnames(k_star) <- c("RSS","TE")
+
+k_star[,1] <- order(error[,2])[1]
+k_star[,2] <- order(error[,3])[1]
+k_star
+
+#2)
+m_hat_RSS <- m_hat[,k_star[,1]]
+m_hat_TE <- m_hat[,k_star[,2]]
+
+plot(x,sin(x))
+plot(x,y)
+plot(x,m_hat_RSS) #bias와 분산 모두 작으나, 기존 모형에서 오차가 있으므로 분산 큼
+plot(x,m_hat_TE) #bias는 크고, 분산은 작음 => bias-variance trade off
+
+
